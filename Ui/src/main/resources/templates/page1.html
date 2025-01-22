@@ -149,7 +149,10 @@
 
         // 조회 버튼 클릭 시 데이터 로드
         function loadTableData() {
-            fetch(`http://localhost:8082/bi/user/table`)
+            // 추가로 검색에 써놓은 데이터 초기화
+            closeModal();
+            document.getElementById('searchForm').reset();
+            fetch(`http://localhost:12400/bi/user/table`)
                 .then(response => response.json())
                 .then(data => {
                     if (dataGridInstance) {
@@ -174,7 +177,7 @@
                 updaDtFrom: chageDate(document.getElementById('searchUpdaDtFrom').value,0),
                 updaDtTo: chageDate(document.getElementById('searchUpdaDtTo').value,1)
             };
-            fetch(`http://localhost:8082/bi/user/search`, {
+            fetch(`http://localhost:12400/bi/user/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(searchParams)
@@ -192,6 +195,7 @@
                         groupByGrid.option("dataSource", data.data.groupByList);
                     }
                 });
+            document.getElementById('searchForm').reset();
         }
         // 날짜 값이 있으면 다음날로 처리하는 함수
         function chageDate(dateString, plus) {
@@ -211,6 +215,7 @@
 
         // 모달 창 닫기
         function closeModal() {
+            document.getElementById('regi-form').reset();
             document.getElementById('regi-modal').style.display = "none";
         }
         // 사용자가 입력한 값을 등록하는 메서드
@@ -221,7 +226,7 @@
                 pw: document.getElementById('password').value,
                 regiUser: document.getElementById('regiUser').value
             };
-            fetch(`http://localhost:8082/bi/user/regiUser`, {
+            fetch(`http://localhost:12400/bi/user/regiUser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -245,7 +250,7 @@
 
         // 사용자 수정 처리
         function modifyUser(id) {
-            fetch(`http://localhost:8082/bi/user/update/${id}`, {
+            fetch(`http://localhost:12400/bi/user/update/${id}`, {
             method: 'POST'
         })
         .then(response => response .json())
@@ -265,7 +270,7 @@
 
         // 사용자 삭제 처리
         function deleteUser(id) {
-            fetch(`http://localhost:8082/bi/user/delete/${id}`, {
+            fetch(`http://localhost:12400/bi/user/delete/${id}`, {
             method: 'POST'
         })
         .then(response => response.json())

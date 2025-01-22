@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{/layouts/default}">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="content container-fluid">
+        <div>메뉴 페이지</div>
+        <div class="box">
+            <div class="box-header with-bordered">
+                <button onclick="loadMenuTable()">전체 메뉴 조회</button>
+                <button onclick="openModal()">등록</button>
+            </div>
+            <div class="box-body">
+                <!-- 테이블 출력 -->
+                <div id="dataGridContainer"></div>
+            </div>
+        </div>
+    </div>
+
+<!-- 등록 모달 -->
+    <div id="register-modal" style="display:none;">
+        <h2> 새로운 메뉴 등록 </h2>
+        <form id="regi-form">
+            <label for="menuNm">메뉴 이름</label>
+            <input type="text" id="menuNm" name="menuNm"/><br /><br />
+            <label for="sort">순번</label>
+            <input type="text" id="sort" name="sort"/><br /><br />
+            <label for="uprMenuId">상위 메뉴 아이디</label>
+            <input type="text" id="uprMenuId" name="uprMenuId"/><br /><br />
+            <label for="url">URL</label>
+            <input type="text" id="url" name="url"/><br /><br />
+            <label for="regiUser">등록자 이름</label>
+            <input type="text" id="regiUser" name="regiUser"/><br /><br />
+
+            <button type="button" onclick="registerMenu()">등록</button>
+            <button type="button" onclick="closeModal()">닫기</button>
+        </form>
+    </div>
+</div>
+
+<th:block layout:fragment="script">
+    <script type="text/javascript">
+    let dataGridInstance = null;
+    // 페이지 로딩 시 빈 데이터로 dxDataGrid 초기화
+    window.onload = function () {
+        dataGridInstance = $("#dataGridContainer").dxDataGrid({
+            dataSource: [], // 빈 데이터
+            columns: [
+                { dataField: "menuNm", caption: "메뉴 이름" },
+                { dataField: "sort", caption: "순번" },
+                { dataField: "uprMenuId", caption: "상위 메뉴 아이디" },
+                { dataField: "url", caption: "URL" },
+                { dataField: "useYn", caption: "사용 여부" },
+                { dataField: "regiUser", caption: "등록자 아이디" },
+                { dataField: "regiDt", caption: "등록일" ,dataType: "date", format: "yyyy-MM-dd"},
+                { dataField: "updaUser", caption: "수정자 아이디" },
+                { dataField: "updaDt", caption: "수정일", dataType: "date", format: "yyyy-MM-dd"},
+                {
+                    type: "buttons",
+                    buttons: [
+                        {
+                            text: "삭제",
+                            onClick: function (e) {
+                                const menu = e.row.data;
+                                if (confirm("삭제하시겠습니까?")) {
+                                    deleteMenu(menu.menuId);
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
+            paging: { pageSize: 10 },
+            pager: { showPageSizeSelector: true, allowedPageSizes: [5, 10, 20] },
+            filterRow: { visible: true },
+            searchPanel: { visible: true },
+            // 행 색상 변경 활성화
+            rowAlternationEnabled: true,
+            onRowPrepared: function (e) {
+                if (e.rowType === "data" && e.data.useYn === "N") {
+                    e.rowElement.css({
+                        "text-decoration" : "line-through",
+                        "color" : "red",
+                    });
+                }
+            }
+        }).dxDataGrid("instance");
+
+    };
+
+    // 데이터 조회
+    function loadMenuTable() {
+        fetch(`http://localhost:12400/bi/menu/table`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                if (dataGridInstance) {
+                    dataGridInstance.option("dataSource", data); // 데이터 설정
+                }
+            })
+            .catch(error => {
+                console.error("데이터 로드 실패:", error);
+                alert("데이터 로드에 실패했습니다.");
+            });
+        closeModal();
+    }
+    // 모달 창 띄우기
+    function openModal() {
+        document.getElementById('register-modal').style.display = "block";
+    }
+
+    // 모달 창 닫기
+    function closeModal() {
+        document.getElementById('regi-form').reset();
+        document.getElementById('register-modal').style.display = "none";
+    }
+
+    // 메뉴 삭제
+    function deleteMenu(id) {
+        fetch(`http://localhost:12400/bi/menu/delete/${id}`, {
+        method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                if(data.data === 200){
+                    alert("삭제되었습니다!");
+                    loadTableData();
+                } else {
+                    console.log(data.data.message)
+                    alert(data.data.message || "삭제 실패");
+                }
+            })
+        closeModal();
+    }
+
+
+    // 사용자가 입력한 값을 등록하는 메서드
+    function registerMenu() {
+        const menu = {
+            menuNm: document.getElementById('menuNm').value,
+            sort: document.getElementById('sort').value,
+            uprMenuId: document.getElementById('uprMenuId').value,
+            url: document.getElementById('url').value,
+            regiUser: document.getElementById('regiUser').value
+        };
+        fetch(`http://localhost:12400/bi/menu/regi`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(menu)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.data === 200) {
+                    alert("메뉴 등록 완료");
+                } else {
+                    alert(data.data.message);
+                }
+                closeModal();
+                loadMenuTable();
+            });
+        // 등록후에는 모달창을 닫고 데이터 새롭게 로딩
+    }
+</script>
+</th:block>
+</body>
+</html>

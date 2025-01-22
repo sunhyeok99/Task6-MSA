@@ -21,5 +21,9 @@ public class MainController {
         return "page1";
     }
 
+    @GetMapping("/page2")
+    public String getMenuPage() {
+        return "page2"; // 메뉴 관리 페이지
+    }
 
 }
